@@ -9,6 +9,8 @@ from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 
 from game_engine import ChessGame
+from bot_engine import get_bot_move_for_level, CUSTOM_BOT_LEVELS
+import chess
 
 app = Flask(
     __name__,
@@ -108,6 +110,27 @@ def get_pgn(game_id):
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok", "active_games": len(GAMES)})
+
+@app.route("/api/game/<game_id>/bot_move", methods=["POST"])
+def bot_move(game_id):
+    game = get_game_or_404(game_id)
+    if not game:
+        return jsonify({"error": "game not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    level = data.get("level", 1)
+
+    if level not in CUSTOM_BOT_LEVELS:
+        return jsonify({"error": f"Level {level} not yet supported (levels 1-4 only for now)"}), 400
+
+    move = get_bot_move_for_level(game.board, level)
+    if move is None:
+        return jsonify({"error": "no legal moves (game over)"}), 400
+
+    state = game.push_move(move.uci())
+    state["bot_move_played"] = move.uci()
+    state["bot_name"] = CUSTOM_BOT_LEVELS[level]["name"]
+    return jsonify(state)
 
 
 if __name__ == "__main__":
