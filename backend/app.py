@@ -11,6 +11,7 @@ from stockfish_engine import get_stockfish_move, STOCKFISH_BOT_LEVELS
 from game_engine import ChessGame
 from bot_engine import get_bot_move_for_level, CUSTOM_BOT_LEVELS
 import chess
+from openings import identify_opening
 
 app = Flask(
     __name__,
@@ -149,6 +150,14 @@ def difficulty_levels():
     for lvl, cfg in STOCKFISH_BOT_LEVELS.items():
         levels[lvl] = {"name": cfg["name"], "rating": cfg["rating"]}
     return jsonify(levels)
+
+@app.route("/api/game/<game_id>/opening", methods=["GET"])
+def get_opening(game_id):
+    game = get_game_or_404(game_id)
+    if not game:
+        return jsonify({"error": "game not found"}), 404
+    opening = identify_opening(game.move_history)
+    return jsonify(opening or {"eco": None, "name": "Unknown / Out of book"})
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
