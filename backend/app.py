@@ -7,7 +7,7 @@ Games are kept in-memory keyed by game_id.
 import uuid
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
-
+from stockfish_engine import get_stockfish_move, STOCKFISH_BOT_LEVELS
 from game_engine import ChessGame
 from bot_engine import get_bot_move_for_level, CUSTOM_BOT_LEVELS
 import chess
@@ -120,18 +120,35 @@ def bot_move(game_id):
     data = request.get_json(silent=True) or {}
     level = data.get("level", 1)
 
-    if level not in CUSTOM_BOT_LEVELS:
-        return jsonify({"error": f"Level {level} not yet supported (levels 1-4 only for now)"}), 400
+    if level in CUSTOM_BOT_LEVELS:
+        move = get_bot_move_for_level(game.board, level)
+        if move is None:
+            return jsonify({"error": "no legal moves (game over)"}), 400
+        move_uci = move.uci()
+        bot_name = CUSTOM_BOT_LEVELS[level]["name"]
 
-    move = get_bot_move_for_level(game.board, level)
-    if move is None:
-        return jsonify({"error": "no legal moves (game over)"}), 400
+    elif level in STOCKFISH_BOT_LEVELS:
+        move_uci = get_stockfish_move(game.board.fen(), level)
+        if move_uci is None:
+            return jsonify({"error": "no legal moves (game over)"}), 400
+        bot_name = STOCKFISH_BOT_LEVELS[level]["name"]
 
-    state = game.push_move(move.uci())
-    state["bot_move_played"] = move.uci()
-    state["bot_name"] = CUSTOM_BOT_LEVELS[level]["name"]
+    else:
+        return jsonify({"error": f"invalid level {level} (must be 1-10)"}), 400
+
+    state = game.push_move(move_uci)
+    state["bot_move_played"] = move_uci
+    state["bot_name"] = bot_name
     return jsonify(state)
 
+@app.route("/api/difficulty_levels", methods=["GET"])
+def difficulty_levels():
+    levels = {}
+    for lvl, cfg in CUSTOM_BOT_LEVELS.items():
+        levels[lvl] = {"name": cfg["name"], "rating": cfg["rating"]}
+    for lvl, cfg in STOCKFISH_BOT_LEVELS.items():
+        levels[lvl] = {"name": cfg["name"], "rating": cfg["rating"]}
+    return jsonify(levels)
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
