@@ -3,6 +3,7 @@ const API_BASE = "http://127.0.0.1:5000/api";
 let board = null;
 let gameId = null;
 let gameState = null;
+let legalMoves = [];
 
 // ---------- board setup ----------
 
@@ -13,19 +14,32 @@ function initBoard() {
     pieceTheme: "https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png",
     onDrop: handleMove,
     onDragStart: onDragStart,
+    onMouseoverSquare: onMouseoverSquare,
+    onMouseoutSquare: onMouseoutSquare,
   });
 }
 
+function onMouseoverSquare(square) {
+  if (!gameState || gameState.is_game_over) return;
+  const targets = legalTargetsFrom(square);
+  if (targets.length === 0) return;
+  highlightSquares([square, ...targets]);
+}
+
+function onMouseoutSquare() {
+  clearHighlights();
+}
+
+
 function onDragStart(source, piece) {
-  // prevent dragging if game is over
   if (gameState && gameState.is_game_over) return false;
 
-  // prevent picking up the wrong color's pieces
   const isWhitePiece = piece.startsWith("w");
   const isWhiteTurn = gameState && gameState.turn === "white";
   if (isWhitePiece !== isWhiteTurn) return false;
-}
 
+  if (legalTargetsFrom(source).length === 0) return false;
+}
 // ---------- API calls ----------
 
 async function startNewGame() {
@@ -33,12 +47,22 @@ async function startNewGame() {
   gameState = await res.json();
   gameId = gameState.game_id;
   board.position(gameState.fen);
+  await refreshLegalMoves();
   updateSidePanel();
 }
 
-async function handleMove(source, target) {
-  const uciMove = source + target; // e.g. "e2e4"
+function handleMove(source, target) {
+  const uciMove = source + target;
 
+  if (!legalMoves.includes(uciMove)) {
+    return "snapback"; // synchronous check, works correctly with chessboard.js
+  }
+
+  // legal — proceed with the actual API call, but don't block chessboard.js on it
+  playMoveOnServer(uciMove);
+}
+
+async function playMoveOnServer(uciMove) {
   const res = await fetch(`${API_BASE}/game/${gameId}/move`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -46,15 +70,85 @@ async function handleMove(source, target) {
   });
 
   if (!res.ok) {
-    // illegal move — snap piece back
-    return "snapback";
+    // shouldn't happen since we pre-validated, but just in case
+    board.position(gameState.fen);
+    return;
   }
 
   gameState = await res.json();
   updateSidePanel();
-
-  // sync board to server FEN (handles castling, en passant, promotion visuals)
   board.position(gameState.fen);
+  await refreshLegalMoves();
+
+  if (!gameState.is_game_over) {
+    setTimeout(requestBotMove, 300);
+  }
+}
+
+async function loadDifficultyLevels() {
+  const res = await fetch(`${API_BASE}/difficulty_levels`);
+  const levels = await res.json();
+  const select = document.getElementById("difficulty-select");
+  select.innerHTML = "";
+
+  const tiers = [
+    { label: "Beginner", range: [1, 2] },
+    { label: "Intermediate", range: [3, 4] },
+    { label: "Advanced", range: [5, 6] },
+    { label: "Expert", range: [7, 8] },
+    { label: "Master", range: [9, 10] },
+  ];
+
+  tiers.forEach((tier) => {
+    const group = document.createElement("optgroup");
+    group.label = tier.label;
+    for (let lvl = tier.range[0]; lvl <= tier.range[1]; lvl++) {
+      if (!levels[lvl]) continue;
+      const opt = document.createElement("option");
+      opt.value = lvl;
+      opt.textContent = `${levels[lvl].name} (~${levels[lvl].rating})`;
+      group.appendChild(opt);
+    }
+    select.appendChild(group);
+  });
+}
+async function requestBotMove() {
+  const level = parseInt(document.getElementById("difficulty-select").value, 10);
+
+  const res = await fetch(`${API_BASE}/game/${gameId}/bot_move`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ level }),
+  });
+
+  if (!res.ok) return;
+
+  gameState = await res.json();
+  board.position(gameState.fen);
+  updateSidePanel();
+  await refreshLegalMoves();
+}
+
+async function refreshLegalMoves() {
+  const res = await fetch(`${API_BASE}/game/${gameId}/legal_moves`);
+  const data = await res.json();
+  legalMoves = data.moves; // array of UCI strings, e.g. ["e2e3", "e2e4", ...]
+}
+
+function legalTargetsFrom(square) {
+  return legalMoves
+    .filter((m) => m.startsWith(square))
+    .map((m) => m.substring(2, 4));
+}
+
+function highlightSquares(squares) {
+  squares.forEach((sq) => {
+    $(`#board .square-${sq}`).addClass("highlight-move");
+  });
+}
+
+function clearHighlights() {
+  $("#board .square-55d63").removeClass("highlight-move");
 }
 
 // ---------- UI updates ----------
@@ -83,5 +177,6 @@ function updateSidePanel() {
 document.addEventListener("DOMContentLoaded", () => {
   initBoard();
   startNewGame();
+  loadDifficultyLevels();
   document.getElementById("new-game-btn").addEventListener("click", startNewGame);
 });
