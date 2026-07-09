@@ -1,0 +1,42 @@
+body {
+  background: #1e1e1e;
+  color: #eee;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  justify-content: center;
+  padding-top: 20px;
+}
+
+.app-container {
+  text-align: center;
+}
+
+.main-area {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.side-panel {
+  width: 220px;
+  text-align: left;
+  background: #2a2a2a;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+#new-game-btn {
+  background: #7fb069;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#move-list {
+  padding-left: 20px;
+  max-height: 300px;
+  overflow-y: auto;
+}

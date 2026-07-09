@@ -2,10 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Chess Game — Step 1 Placeholder</title>
+  <title>Chess Game</title>
+  <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-  <h1>Backend is running.</h1>
-  <p>This is a placeholder page. The real board UI gets built in Step 2.</p>
+
+  <div class="app-container">
+    <h1>Chess Game</h1>
+
+    <div class="main-area">
+      <div id="board" style="width: 480px"></div>
+
+      <div class="side-panel">
+        <p>Turn: <span id="turn-indicator">white</span></p>
+        <p>Status: <span id="status-indicator">-</span></p>
+        <button id="new-game-btn">New Game</button>
+        <h3>Move History</h3>
+        <ol id="move-list"></ol>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
