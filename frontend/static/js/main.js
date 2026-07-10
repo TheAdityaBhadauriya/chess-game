@@ -344,8 +344,9 @@ function renderMoveBreakdown(moves) {
   list.innerHTML = "";
   moves.forEach((m) => {
     const li = document.createElement("li");
-    li.textContent = `${m.san} (${m.player}) — ${m.classification}`;
-    li.style.color = CLASSIFICATION_COLORS[m.classification] || "#eee";
+    const color = CLASSIFICATION_COLORS[m.classification] || "#eee";
+    li.innerHTML = `<span style="color:${color}; font-weight:600;">${m.san}</span> <span style="color:#8a7a63;">(${m.player})</span> — <span style="color:${color};">${m.classification}</span>`;
+    li.style.borderLeftColor = color;
     list.appendChild(li);
   });
 }
