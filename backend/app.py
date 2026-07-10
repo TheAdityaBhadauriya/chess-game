@@ -12,6 +12,7 @@ from game_engine import ChessGame
 from bot_engine import get_bot_move_for_level, CUSTOM_BOT_LEVELS
 import chess
 from openings import identify_opening
+from game_analysis import analyze_game
 
 app = Flask(
     __name__,
@@ -158,6 +159,19 @@ def get_opening(game_id):
         return jsonify({"error": "game not found"}), 404
     opening = identify_opening(game.move_history)
     return jsonify(opening or {"eco": None, "name": "Unknown / Out of book"})
+
+@app.route("/api/game/<game_id>/analysis", methods=["GET"])
+def get_analysis(game_id):
+    game = get_game_or_404(game_id)
+    if not game:
+        return jsonify({"error": "game not found"}), 404
+    if not game.uci_history:
+        return jsonify({"error": "no moves played yet"}), 400
+
+    analysis = analyze_game(game.uci_history, game.move_history)
+    opening = identify_opening(game.move_history)
+    analysis["opening"] = opening or {"eco": None, "name": "Unknown / Out of book"}
+    return jsonify(analysis)
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
