@@ -170,6 +170,61 @@ function updateSidePanel() {
     li.textContent = san;
     moveList.appendChild(li);
   });
+  document.getElementById("analyze-btn").style.display = gameState.is_game_over ? "inline-block" : "none";
+}
+
+async function fetchAnalysis() {
+  const res = await fetch(`${API_BASE}/game/${gameId}/analysis`);
+  if (!res.ok) return;
+  const analysis = await res.json();
+  renderAnalysis(analysis);
+}
+
+function renderAnalysis(analysis) {
+  document.getElementById("analysis-panel").style.display = "block";
+  document.getElementById("opening-name").textContent =
+    `${analysis.opening.name} (${analysis.opening.eco || "?"})`;
+  document.getElementById("white-accuracy").textContent = analysis.white_accuracy;
+  document.getElementById("black-accuracy").textContent = analysis.black_accuracy;
+
+  drawEvalGraph(analysis.eval_graph);
+  renderMoveBreakdown(analysis.moves);
+}
+
+function drawEvalGraph(evalGraph) {
+  const svg = document.getElementById("eval-graph");
+  const width = 600, height = 150;
+  const maxEval = 500; // clamp display range to +/-500 centipawns for readability
+  const points = evalGraph.map((point, i) => {
+    const x = (i / (evalGraph.length - 1)) * width;
+    const clamped = Math.max(-maxEval, Math.min(maxEval, point.eval));
+    const y = height / 2 - (clamped / maxEval) * (height / 2);
+    return `${x},${y}`;
+  });
+
+  svg.innerHTML = `
+    <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="#555" stroke-width="1" />
+    <polyline points="${points.join(" ")}" fill="none" stroke="#7fb069" stroke-width="2" />
+  `;
+}
+
+const CLASSIFICATION_COLORS = {
+  best: "#7fb069",
+  good: "#a3c9a8",
+  inaccuracy: "#e6c229",
+  mistake: "#e67e22",
+  blunder: "#e74c3c",
+};
+
+function renderMoveBreakdown(moves) {
+  const list = document.getElementById("analysis-move-list");
+  list.innerHTML = "";
+  moves.forEach((m) => {
+    const li = document.createElement("li");
+    li.textContent = `${m.san} (${m.player}) — ${m.classification}`;
+    li.style.color = CLASSIFICATION_COLORS[m.classification] || "#eee";
+    list.appendChild(li);
+  });
 }
 
 // ---------- init ----------
@@ -179,4 +234,5 @@ document.addEventListener("DOMContentLoaded", () => {
   startNewGame();
   loadDifficultyLevels();
   document.getElementById("new-game-btn").addEventListener("click", startNewGame);
+  document.getElementById("analyze-btn").addEventListener("click", fetchAnalysis);
 });

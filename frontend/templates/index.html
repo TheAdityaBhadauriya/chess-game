@@ -1,35 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <title>Chess Game</title>
-  <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <meta charset="UTF-8">
+    <title>Chess Game</title>
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+
 <body>
 
-  <div class="app-container">
-    <h1>Chess Game</h1>
+    <div class="app-container">
+        <h1>Chess Game</h1>
 
-    <div class="main-area">
-      <div id="board" style="width: 480px"></div>
+        <div class="main-area">
+            <div id="board" style="width: 480px"></div>
 
-      <div class="side-panel">
-        <p>Turn: <span id="turn-indicator">white</span></p>
-        <p>Status: <span id="status-indicator">-</span></p>
-        <button id="new-game-btn">New Game</button>
-        <div class="difficulty-selector">
-        <label for="difficulty-select">Bot Difficulty</label>
-        <select id="difficulty-select"></select>
+ <div class="side-panel">
+                <p>Turn: <span id="turn-indicator">white</span></p>
+                <p>Status: <span id="status-indicator">-</span></p>
+                <button id="new-game-btn">New Game</button>
+                <div class="difficulty-selector">
+                    <label for="difficulty-select">Bot Difficulty</label>
+                    <select id="difficulty-select"></select>
+                </div>
+                <h3>Move History</h3>
+                <ol id="move-list"></ol>
+                <button id="analyze-btn" style="display: none;">Analyze Game</button>
+            </div>
+
+            <div id="analysis-panel" class="analysis-panel" style="display: none;">
+                <h2>Game Analysis</h2>
+                <p>Opening: <span id="opening-name">-</span></p>
+                <div class="accuracy-row">
+                    <div>White Accuracy: <span id="white-accuracy">-</span>%</div>
+                    <div>Black Accuracy: <span id="black-accuracy">-</span>%</div>
+                </div>
+                <svg id="eval-graph" viewBox="0 0 600 150" style="width: 100%; height: 150px;"></svg>
+                <h3>Move Breakdown</h3>
+                <ol id="analysis-move-list"></ol>
+            </div>
         </div>
-        <h3>Move History</h3>
-        <ol id="move-list"></ol>
-      </div>
     </div>
-  </div>
-
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
-  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
+
 </html>

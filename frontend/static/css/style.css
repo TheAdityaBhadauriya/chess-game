@@ -9,6 +9,9 @@ body {
 
 .app-container {
   text-align: center;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 .main-area {
@@ -16,6 +19,8 @@ body {
   gap: 30px;
   justify-content: center;
   margin-top: 20px;
+  flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .side-panel {
@@ -77,4 +82,48 @@ body {
   font-size: 13px;
   color: #aaa;
   margin-top: 12px;
+}
+
+.analysis-panel {
+  width: 320px;
+  max-width: 320px;
+  margin: 0;
+  background: #2a2a2a;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: left;
+  box-sizing: border-box;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.accuracy-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+  font-weight: bold;
+}
+
+#eval-graph {
+  background: #1e1e1e;
+  border-radius: 6px;
+  margin: 10px 0;
+}
+
+#analysis-move-list {
+  max-height: 250px;
+  overflow-y: auto;
+  padding-left: 20px;
+}
+
+#analyze-btn {
+  background: #4a90d9;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  color: white;
+  margin-top: 10px;
+  width: 100%;
 }
