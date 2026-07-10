@@ -21,6 +21,16 @@ function initBoard() {
   });
 }
 
+const PIECE_UNICODE = {
+  wP: "♙", wN: "♘", wB: "♗", wR: "♖", wQ: "♕", wK: "♔",
+  bP: "♟", bN: "♞", bB: "♝", bR: "♜", bQ: "♛", bK: "♚",
+};
+
+const STARTING_COUNTS = {
+  wP: 8, wN: 2, wB: 2, wR: 2, wQ: 1,
+  bP: 8, bN: 2, bB: 2, bR: 2, bQ: 1,
+};
+
 function onMouseoverSquare(square) {
   if (!gameState || gameState.is_game_over) return;
   if (selectedSquare) return; // don't override the persistent selection highlight on hover
@@ -242,6 +252,7 @@ function updateSidePanel() {
     moveList.appendChild(li);
   });
   document.getElementById("analyze-btn").style.display = gameState.is_game_over ? "inline-block" : "none";
+  updateCapturedPieces();
 }
 
 async function fetchAnalysis() {
@@ -249,6 +260,32 @@ async function fetchAnalysis() {
   if (!res.ok) return;
   const analysis = await res.json();
   renderAnalysis(analysis);
+}
+
+function updateCapturedPieces() {
+  const position = board.position();
+  const currentCounts = {};
+
+  Object.values(position).forEach((piece) => {
+    currentCounts[piece] = (currentCounts[piece] || 0) + 1;
+  });
+
+  let capturedByWhite = ""; // black pieces White has taken
+  let capturedByBlack = ""; // white pieces Black has taken
+
+  Object.keys(STARTING_COUNTS).forEach((piece) => {
+    const missing = STARTING_COUNTS[piece] - (currentCounts[piece] || 0);
+    if (missing <= 0) return;
+    const symbol = PIECE_UNICODE[piece].repeat(missing);
+    if (piece.startsWith("b")) {
+      capturedByWhite += symbol;
+    } else {
+      capturedByBlack += symbol;
+    }
+  });
+
+  document.getElementById("captured-by-white").textContent = capturedByWhite;
+  document.getElementById("captured-by-black").textContent = capturedByBlack;
 }
 
 function renderAnalysis(analysis) {
