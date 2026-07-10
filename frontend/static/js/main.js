@@ -262,6 +262,21 @@ async function fetchAnalysis() {
   renderAnalysis(analysis);
 }
 
+async function resignGame() {
+  if (!gameState || gameState.is_game_over) return;
+
+  const resigningColor = gameState.turn; // whoever's turn it is resigns
+  const res = await fetch(`${API_BASE}/game/${gameId}/resign`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ color: resigningColor }),
+  });
+
+  if (!res.ok) return;
+  gameState = await res.json();
+  updateSidePanel();
+}
+
 function updateCapturedPieces() {
   const position = board.position();
   const currentCounts = {};
@@ -351,4 +366,5 @@ document.addEventListener("DOMContentLoaded", () => {
     const square = squareClass.replace("square-", "");
     handleSquareClick(square);
   });
+  document.getElementById("resign-btn").addEventListener("click", resignGame);
 });

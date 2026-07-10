@@ -173,5 +173,25 @@ def get_analysis(game_id):
     analysis["opening"] = opening or {"eco": None, "name": "Unknown / Out of book"}
     return jsonify(analysis)
 
+@app.route("/api/game/<game_id>/resign", methods=["POST"])
+def resign_game(game_id):
+    game = get_game_or_404(game_id)
+    if not game:
+        return jsonify({"error": "game not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+    resigning_color = data.get("color")  # "white" or "black"
+    if resigning_color not in ("white", "black"):
+        return jsonify({"error": "must specify color: 'white' or 'black'"}), 400
+
+    game.resigned = True
+    winner = "black" if resigning_color == "white" else "white"
+    game.resign_result = f"resignation_{winner}_wins"
+
+    state = game.to_dict()
+    state["is_game_over"] = True
+    state["result"] = game.resign_result
+    return jsonify(state)
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

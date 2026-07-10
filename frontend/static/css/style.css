@@ -127,3 +127,12 @@ body {
   margin-top: 10px;
   width: 100%;
 }
+
+.captured-pieces {
+  margin: 10px 0;
+  font-size: 20px;
+}
+
+.captured-pieces div {
+  margin: 4px 0;
+}

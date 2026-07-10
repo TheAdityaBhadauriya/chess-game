@@ -16,10 +16,15 @@
         <div class="main-area">
             <div id="board" style="width: 480px"></div>
 
- <div class="side-panel">
+            <div class="side-panel">
                 <p>Turn: <span id="turn-indicator">white</span></p>
                 <p>Status: <span id="status-indicator">-</span></p>
                 <button id="new-game-btn">New Game</button>
+                <button id="resign-btn">Resign</button>
+                <div class="captured-pieces">
+                    <div>White captured: <span id="captured-by-white"></span></div>
+                    <div>Black captured: <span id="captured-by-black"></span></div>
+                </div>
                 <div class="difficulty-selector">
                     <label for="difficulty-select">Bot Difficulty</label>
                     <select id="difficulty-select"></select>

@@ -12,9 +12,10 @@ class ChessGame:
     def __init__(self, game_id: str):
         self.game_id = game_id
         self.board = chess.Board()
-        self.move_history = []   # SAN strings, in order
-        self.uci_history = []    # UCI strings, in order
-
+        self.move_history = []          # list of SAN strings, in order
+        self.uci_history = []           # list of UCI strings, in order
+        self.resigned = False
+        self.resign_result = None
     # ---------- state ----------
 
     def to_dict(self) -> dict:
@@ -27,8 +28,8 @@ class ChessGame:
             "is_check": self.board.is_check(),
             "is_checkmate": self.board.is_checkmate(),
             "is_stalemate": self.board.is_stalemate(),
-            "is_game_over": self.board.is_game_over(),
-            "result": self._result_string(),
+            "is_game_over": self.board.is_game_over() or self.resigned,
+            "result": self.resign_result if self.resigned else self._result_string(),
             "half_move_clock": self.board.halfmove_clock,
             "full_move_number": self.board.fullmove_number,
         }
