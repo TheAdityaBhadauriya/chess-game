@@ -4,6 +4,8 @@ let board = null;
 let gameId = null;
 let gameState = null;
 let legalMoves = [];
+let selectedSquare = null;
+let justDragged = false;
 
 // ---------- board setup ----------
 
@@ -12,7 +14,7 @@ function initBoard() {
     position: "start",
     draggable: true,
     pieceTheme: "https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png",
-    onDrop: handleMove,
+    onDrop: onDrop,
     onDragStart: onDragStart,
     onMouseoverSquare: onMouseoverSquare,
     onMouseoutSquare: onMouseoutSquare,
@@ -21,25 +23,24 @@ function initBoard() {
 
 function onMouseoverSquare(square) {
   if (!gameState || gameState.is_game_over) return;
+  if (selectedSquare) return; // don't override the persistent selection highlight on hover
   const targets = legalTargetsFrom(square);
   if (targets.length === 0) return;
   highlightSquares([square, ...targets]);
 }
 
 function onMouseoutSquare() {
+  if (selectedSquare) return; // keep selection highlights visible until move is made
   clearHighlights();
 }
 
 
 function onDragStart(source, piece) {
   if (gameState && gameState.is_game_over) return false;
-
-  const isWhitePiece = piece.startsWith("w");
-  const isWhiteTurn = gameState && gameState.turn === "white";
-  if (isWhitePiece !== isWhiteTurn) return false;
-
-  if (legalTargetsFrom(source).length === 0) return false;
+  return true; // let onDrop handle all real legality checks (for both drags and clicks)
 }
+
+
 // ---------- API calls ----------
 
 async function startNewGame() {
@@ -51,14 +52,84 @@ async function startNewGame() {
   updateSidePanel();
 }
 
-function handleMove(source, target) {
-  const uciMove = source + target;
+function onDrop(source, target) {
+  if (target === "offboard") return "snapback";
 
-  if (!legalMoves.includes(uciMove)) {
-    return "snapback"; // synchronous check, works correctly with chessboard.js
+  if (source === target) {
+    return handleSquareClick(source);
   }
 
-  // legal — proceed with the actual API call, but don't block chessboard.js on it
+  const result = handleDragMove(source, target);
+  justDragged = true;
+  setTimeout(() => { justDragged = false; }, 100);
+  return result;
+}
+
+function handleSquareClick(square) {
+  if (gameState.is_game_over) return "snapback";
+
+  if (selectedSquare && selectedSquare !== square) {
+    const isPromotion = checkIfPromotion(selectedSquare, square);
+    const matchExists = legalMoves.some((m) => m.startsWith(selectedSquare + square));
+
+    if (matchExists) {
+      const from = selectedSquare;
+      selectedSquare = null;
+      clearHighlights();
+      if (isPromotion) {
+        showPromotionPicker(from, square);
+      } else {
+        playMoveOnServer(from + square);
+      }
+      return "snapback";
+    }
+  }
+
+  clearHighlights();
+  const targets = legalTargetsFrom(square);
+  if (targets.length === 0) {
+    selectedSquare = null;
+    return "snapback";
+  }
+  selectedSquare = square;
+  highlightSquares([square, ...targets]);
+  return "snapback";
+}
+
+function handleDragMove(source, target) {
+  selectedSquare = null;
+  clearHighlights();
+
+  const isPromotion = checkIfPromotion(source, target);
+  if (!legalMoves.some((m) => m.startsWith(source + target))) {
+    return "snapback";
+  }
+  if (isPromotion) {
+    showPromotionPicker(source, target);
+    return "snapback";
+  }
+  playMoveOnServer(source + target);
+}
+
+function checkIfPromotion(source, target) {
+  const piece = board.position()[source];
+  if (!piece) return false;
+  const isPawn = piece[1] === "P";
+  const targetRank = target[1];
+  return isPawn && (targetRank === "8" || targetRank === "1");
+}
+
+function showPromotionPicker(source, target) {
+  const pieceColor = board.position()[source][0]; // "w" or "b"
+  const choice = prompt("Promote to: q (queen), r (rook), b (bishop), n (knight)", "q");
+  const validChoice = ["q", "r", "b", "n"].includes(choice) ? choice : "q";
+  const uciMove = source + target + validChoice;
+
+  if (!legalMoves.some((m) => m.startsWith(source + target))) {
+    board.position(gameState.fen); // snap back, wasn't actually legal
+    return;
+  }
+
   playMoveOnServer(uciMove);
 }
 
@@ -235,4 +306,12 @@ document.addEventListener("DOMContentLoaded", () => {
   loadDifficultyLevels();
   document.getElementById("new-game-btn").addEventListener("click", startNewGame);
   document.getElementById("analyze-btn").addEventListener("click", fetchAnalysis);
+ $("#board").on("click", ".square-55d63", function () {
+    if (justDragged) return;
+    const classes = $(this).attr("class").split(" ");
+    const squareClass = classes.find((c) => /^square-[a-h][1-8]$/.test(c));
+    if (!squareClass) return;
+    const square = squareClass.replace("square-", "");
+    handleSquareClick(square);
+  });
 });
